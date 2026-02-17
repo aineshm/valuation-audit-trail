@@ -1,0 +1,376 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/schemas/report.schema.json",
+  "title": "Valuation Report",
+  "description": "Output schema for comps_ev_revenue. Uses oneOf so status='ok' requires a valuation object while status='error' requires valuation to be null. manifest, warnings, and errors are always present.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "request_id",
+    "as_of_date",
+    "currency",
+    "status",
+    "valuation",
+    "key_inputs",
+    "assumptions_used",
+    "sources",
+    "comps_selection_result",
+    "provenance",
+    "run_manifest",
+    "warnings",
+    "errors"
+  ],
+  "properties": {
+    "request_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Echoed from request for traceability."
+    },
+    "as_of_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Echoed from request."
+    },
+    "currency": {
+      "type": "string",
+      "pattern": "^[A-Z]{3}$",
+      "description": "Echoed from request (optional in request, always present in report)."
+    },
+    "status": {
+      "type": "string",
+      "enum": ["ok", "error"]
+    },
+    "valuation": {
+      "type": ["object", "null"],
+      "description": "Present as object when status='ok', null when status='error'. Enforced by oneOf at root level."
+    },
+    "key_inputs": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Intermediate numeric results (multiples, counts) for human review."
+    },
+    "assumptions_used": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/assumption_entry" }
+    },
+    "sources": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/source_entry" }
+    },
+    "comps_selection_result": { "$ref": "#/$defs/comps_selection_result" },
+    "provenance": { "$ref": "#/$defs/provenance_block" },
+    "run_manifest": { "$ref": "#/$defs/run_manifest" },
+    "warnings": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/issue" }
+    },
+    "errors": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/issue" }
+    }
+  },
+
+  "oneOf": [
+    {
+      "description": "Success path: valuation is a full object.",
+      "properties": {
+        "status": { "const": "ok" },
+        "valuation": { "$ref": "#/$defs/valuation_object" }
+      },
+      "required": ["valuation"]
+    },
+    {
+      "description": "Error path: valuation must be null; errors array must be non-empty.",
+      "properties": {
+        "status": { "const": "error" },
+        "valuation": { "type": "null" },
+        "errors": { "minItems": 1 }
+      },
+      "required": ["valuation", "errors"]
+    }
+  ],
+
+  "$defs": {
+    "valuation_object": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["method", "fair_value"],
+      "properties": {
+        "method": {
+          "const": "comps_ev_revenue"
+        },
+        "fair_value": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["currency", "point", "range", "range_basis", "provenance_node_ids"],
+          "properties": {
+            "currency": {
+              "type": "string",
+              "pattern": "^[A-Z]{3}$"
+            },
+            "point": {
+              "type": "number",
+              "description": "Median-based EV estimate. NOT a claim of correctness."
+            },
+            "range": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["low", "high"],
+              "properties": {
+                "low": { "type": "number" },
+                "high": { "type": "number" }
+              }
+            },
+            "range_basis": {
+              "const": "q25_q75"
+            },
+            "provenance_node_ids": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["point", "range_low", "range_high"],
+              "properties": {
+                "point": { "type": "string", "minLength": 1 },
+                "range_low": { "type": "string", "minLength": 1 },
+                "range_high": { "type": "string", "minLength": 1 }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "assumption_entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "value"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "value": {}
+      }
+    },
+
+    "source_entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "provider", "dataset", "dataset_version", "dataset_hash", "citation"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "provider": { "type": "string", "minLength": 1 },
+        "dataset": { "type": "string", "minLength": 1 },
+        "dataset_version": { "type": "string", "minLength": 1 },
+        "dataset_hash": { "type": "string", "minLength": 1 },
+        "citation": { "type": "string", "minLength": 1 }
+      }
+    },
+
+    "comps_selection_result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "requested",
+        "dataset_universe",
+        "sort_key_used",
+        "matched_before_limit",
+        "included_count",
+        "included_company_ids",
+        "match_details"
+      ],
+      "properties": {
+        "requested": {
+          "type": "object",
+          "description": "Echo of the comps_selection block from the request."
+        },
+        "dataset_universe": { "type": "string" },
+        "sort_key_used": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "The stable sort key that was applied to produce deterministic ordering."
+        },
+        "matched_before_limit": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Candidates that passed all filters before max_comps was applied."
+        },
+        "included_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "included_company_ids": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "match_details": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/match_detail_entry" },
+          "description": "One entry per candidate evaluated (included + excluded). Explains WHY each was included or excluded."
+        }
+      }
+    },
+
+    "match_detail_entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["company_id", "ticker", "included", "matched_filters"],
+      "properties": {
+        "company_id": { "type": "string", "minLength": 1 },
+        "ticker": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Included for sort-key auditability."
+        },
+        "included": { "type": "boolean" },
+        "matched_filters": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["universe", "sector", "size", "industry_keywords", "geographies", "revenue_band", "ev_positive"],
+          "properties": {
+            "universe": { "type": "boolean" },
+            "sector": {
+              "type": "boolean",
+              "description": "Candidate sector matches at least one requested sector."
+            },
+            "size": {
+              "type": "boolean",
+              "description": "Candidate size bucket matches at least one requested size."
+            },
+            "industry_keywords": { "type": "boolean" },
+            "geographies": { "type": "boolean" },
+            "revenue_band": { "type": "boolean" },
+            "ev_positive": {
+              "type": "boolean",
+              "description": "Runtime validation: comp EV must be > 0."
+            }
+          }
+        },
+        "excluded_reason": {
+          "type": ["string", "null"],
+          "enum": [
+            null,
+            "filter_sector",
+            "filter_size",
+            "filter_industry_keywords",
+            "filter_geographies",
+            "filter_revenue_band",
+            "filter_ev_not_positive",
+            "limit_max_comps"
+          ],
+          "description": "Primary reason for exclusion. null when included=true. Distinguishes filter failures from the max_comps cap."
+        },
+        "selection_rank": {
+          "type": ["integer", "null"],
+          "minimum": 1,
+          "description": "1-based rank after stable sort. Present for all candidates that passed filters; null if filtered out before ranking."
+        }
+      }
+    },
+
+    "provenance_block": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["nodes"],
+      "properties": {
+        "nodes": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/provenance_node" }
+        }
+      }
+    },
+
+    "provenance_node": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "field_path",
+        "formula",
+        "inputs",
+        "assumption_ids",
+        "source_ids",
+        "output"
+      ],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "field_path": { "type": "string", "minLength": 1 },
+        "formula": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Human-readable formula or description of the computation step."
+        },
+        "inputs": { "type": "object" },
+        "assumption_ids": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "source_ids": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "output": {
+          "description": "The computed value for this node."
+        },
+        "parent_ids": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "description": "IDs of upstream provenance nodes this node depends on."
+        }
+      }
+    },
+
+    "run_manifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "timestamp_utc",
+        "engine_version",
+        "config_snapshot",
+        "input_hash",
+        "provider_fingerprints",
+        "output_hash"
+      ],
+      "properties": {
+        "timestamp_utc": { "type": "string", "format": "date-time" },
+        "engine_version": { "type": "string", "minLength": 1 },
+        "config_snapshot": {
+          "type": "object",
+          "description": "Snapshot of all result-driving inputs for reproducibility. Must include: engine_version, rounding_decimals, comps_selection (universe/filters/max_comps/sort_key), provider_overrides, and assumptions (outlier_policy/outlier_quantile/quantile_method).",
+          "required": ["engine_version", "rounding_decimals", "comps_selection", "provider_overrides", "assumptions"],
+          "properties": {
+            "engine_version": { "type": "string", "minLength": 1 },
+            "rounding_decimals": { "type": "integer", "minimum": 0 },
+            "comps_selection": { "type": "object" },
+            "provider_overrides": { "type": "object" },
+            "assumptions": { "type": "object" }
+          }
+        },
+        "input_hash": { "type": "string", "minLength": 1 },
+        "provider_fingerprints": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["provider", "dataset", "version", "hash"],
+            "properties": {
+              "provider": { "type": "string", "minLength": 1 },
+              "dataset": { "type": "string", "minLength": 1 },
+              "version": { "type": "string", "minLength": 1 },
+              "hash": { "type": "string", "minLength": 1 }
+            }
+          }
+        },
+        "output_hash": { "type": "string", "minLength": 1 }
+      }
+    },
+
+    "issue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "message", "json_path"],
+      "properties": {
+        "code": { "type": "string", "minLength": 1 },
+        "message": { "type": "string", "minLength": 1 },
+        "json_path": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

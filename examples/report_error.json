@@ -1,0 +1,104 @@
+{
+  "request_id": "req_2026_02_16_err",
+  "as_of_date": "2026-02-16",
+  "currency": "USD",
+  "status": "error",
+
+  "valuation": null,
+
+  "key_inputs": {
+    "subject_company_id": "SUBJ-ERR",
+    "subject_revenue_ltm": -50.0,
+    "selected_comp_count": 0
+  },
+
+  "assumptions_used": [
+    { "id": "asm_outlier_policy", "name": "outlier_policy", "value": "winsorize" },
+    { "id": "asm_outlier_quantile", "name": "outlier_quantile", "value": 0.1 },
+    { "id": "asm_quantile_method", "name": "quantile_method", "value": "nearest_rank" }
+  ],
+
+  "sources": [
+    {
+      "id": "src_mock_v1",
+      "provider": "mock_v1",
+      "dataset": "mock_comps_snapshot",
+      "dataset_version": "2026-02-16",
+      "dataset_hash": "sha256:placeholder",
+      "citation": "Mock comps dataset — loosely inspired by publicly traded software companies (figures are illustrative, not real market data)"
+    }
+  ],
+
+  "comps_selection_result": {
+    "requested": {
+      "universe": "global_software",
+      "filters": {
+        "sector": ["Application Software"],
+        "size": ["mid"],
+        "industry_keywords": ["software"],
+        "geographies": ["US", "CA"],
+        "revenue_band": { "min": 200.0, "max": 1000.0 }
+      },
+      "max_comps": 5,
+      "sort_key": ["ticker", "company_id"]
+    },
+    "dataset_universe": "global_software",
+    "sort_key_used": ["ticker", "company_id"],
+    "matched_before_limit": 0,
+    "included_count": 0,
+    "included_company_ids": [],
+    "match_details": []
+  },
+
+  "provenance": {
+    "nodes": []
+  },
+
+  "run_manifest": {
+    "timestamp_utc": "2026-02-16T00:00:00Z",
+    "engine_version": "0.2.0",
+    "config_snapshot": {
+      "engine_version": "0.2.0",
+      "rounding_decimals": 2,
+      "comps_selection": {
+        "universe": "global_software",
+        "filters": {
+          "sector": ["Application Software"],
+          "size": ["mid"],
+          "industry_keywords": ["software"],
+          "geographies": ["US", "CA"],
+          "revenue_band": { "min": 200.0, "max": 1000.0 }
+        },
+        "max_comps": 5,
+        "sort_key": ["ticker", "company_id"]
+      },
+      "provider_overrides": {
+        "comps_provider": "mock_v1"
+      },
+      "assumptions": {
+        "outlier_policy": "winsorize",
+        "outlier_quantile": 0.1,
+        "quantile_method": "nearest_rank"
+      }
+    },
+    "input_hash": "sha256:placeholder_error_input_hash",
+    "provider_fingerprints": [
+      {
+        "provider": "mock_v1",
+        "dataset": "mock_comps_snapshot",
+        "version": "2026-02-16",
+        "hash": "sha256:placeholder"
+      }
+    ],
+    "output_hash": "sha256:placeholder_error_output_hash"
+  },
+
+  "warnings": [],
+  "errors": [
+    {
+      "code": "E_REVENUE_NOT_POSITIVE",
+      "message": "Subject revenue_ltm must be > 0; got -50.0",
+      "json_path": "$.subject.revenue_ltm"
+    }
+  ]
+}

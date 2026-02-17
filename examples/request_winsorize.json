@@ -1,0 +1,38 @@
+{
+  "request_id": "req_winsorize_demo",
+  "as_of_date": "2026-02-16",
+  "currency": "USD",
+  "method": "comps_ev_revenue",
+  "subject": {
+    "company_id": "SUBJ-WINS",
+    "company_name": "Winsorize Demo Company",
+    "sector": "Infrastructure Software",
+    "revenue_ltm": 100.0
+  },
+  "comps_selection": {
+    "universe": "global_software",
+    "filters": {
+      "sector": ["Application Software", "Infrastructure Software"],
+      "size": ["mid", "small"],
+      "industry_keywords": ["software"],
+      "revenue_band": {
+        "min": 50.0,
+        "max": 900.0
+      }
+    },
+    "max_comps": 10,
+    "sort_key": ["ticker", "company_id"]
+  },
+  "provider_overrides": {
+    "comps_provider": "mock_v1"
+  },
+  "assumptions": {
+    "outlier_policy": "winsorize",
+    "outlier_quantile": 0.2,
+    "quantile_method": "nearest_rank"
+  },
+  "config": {
+    "engine_version": "0.2.0",
+    "rounding_decimals": 2
+  }
+}

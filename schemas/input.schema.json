@@ -1,0 +1,198 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/schemas/input.schema.json",
+  "title": "Valuation Request",
+  "description": "Input schema for comps_ev_revenue valuation method. Enforces deterministic selection and auditable assumptions.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "request_id",
+    "as_of_date",
+    "currency",
+    "method",
+    "subject",
+    "comps_selection",
+    "provider_overrides",
+    "assumptions",
+    "config"
+  ],
+  "properties": {
+    "request_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Unique identifier for this valuation request. Echoed in the report for traceability."
+    },
+    "as_of_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Valuation reference date (ISO-8601). Echoed in the report."
+    },
+    "currency": {
+      "type": "string",
+      "pattern": "^[A-Z]{3}$",
+      "description": "ISO-4217 currency code. Echoed in the report."
+    },
+    "method": {
+      "const": "comps_ev_revenue",
+      "description": "Valuation method. Only comps_ev_revenue is supported."
+    },
+    "subject": {
+      "type": "object",
+      "description": "The company being valued.",
+      "additionalProperties": false,
+      "required": ["company_id", "company_name", "sector", "revenue_ltm"],
+      "properties": {
+        "company_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "company_name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sector": {
+          "type": "string",
+          "minLength": 1
+        },
+        "revenue_ltm": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Last-twelve-months revenue (must be > 0)."
+        }
+      }
+    },
+    "comps_selection": {
+      "type": "object",
+      "description": "Controls which comps are selected and in what deterministic order.",
+      "additionalProperties": false,
+      "required": ["universe", "filters", "max_comps", "sort_key"],
+      "properties": {
+        "universe": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Named comp universe to draw from (must exist in provider dataset)."
+        },
+        "filters": {
+          "type": "object",
+          "description": "All filters that restrict the candidate set before the max_comps limit is applied.",
+          "additionalProperties": false,
+          "properties": {
+            "sector": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "description": "Sector(s) to match. Candidate must belong to at least one listed sector (case-insensitive exact match)."
+            },
+            "size": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": ["small", "mid", "large"]
+              },
+              "description": "Size bucket(s) to match. Candidate must belong to at least one listed size (e.g., [\"mid\", \"large\"])."
+            },
+            "industry_keywords": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "description": "At least one of the candidate's industry_tags must contain one of these keywords (case-insensitive substring)."
+            },
+            "geographies": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "description": "Candidate geography must be in this list (case-insensitive exact match)."
+            },
+            "revenue_band": {
+              "type": "object",
+              "description": "Min/max revenue filter. Runtime validates min <= max.",
+              "additionalProperties": false,
+              "required": ["min", "max"],
+              "properties": {
+                "min": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "max": {
+                  "type": "number",
+                  "minimum": 0
+                }
+              }
+            }
+          }
+        },
+        "max_comps": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200,
+          "description": "Upper limit on included comps after filtering. Excess comps excluded with reason 'limit_max_comps'."
+        },
+        "sort_key": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "enum": ["ticker", "company_id"]
+          },
+          "description": "Stable sort key applied to filtered candidates before the max_comps cap. Ensures deterministic selection regardless of dataset ordering. Example: [\"ticker\", \"company_id\"]."
+        }
+      }
+    },
+    "provider_overrides": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["comps_provider"],
+      "properties": {
+        "comps_provider": {
+          "const": "mock_v1"
+        }
+      }
+    },
+    "assumptions": {
+      "type": "object",
+      "description": "Analyst-chosen assumptions that affect the computation. All are recorded in the report for auditability.",
+      "additionalProperties": false,
+      "required": ["outlier_policy", "outlier_quantile", "quantile_method"],
+      "properties": {
+        "outlier_policy": {
+          "type": "string",
+          "enum": ["none", "trim", "winsorize"],
+          "description": "How to handle outlier multiples. 'trim' removes tails, 'winsorize' clamps tails to boundaries (computed via quantile_method), 'none' keeps all."
+        },
+        "outlier_quantile": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 0.49,
+          "description": "Fraction of each tail to treat as outliers (e.g., 0.1 = 10th/90th percentile boundaries)."
+        },
+        "quantile_method": {
+          "type": "string",
+          "enum": ["nearest_rank", "linear_interpolation"],
+          "description": "Algorithm for computing q25/q50/q75 on the adjusted multiples. Must be declared explicitly for reproducibility."
+        }
+      }
+    },
+    "config": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["engine_version", "rounding_decimals"],
+      "properties": {
+        "engine_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "rounding_decimals": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 8
+        }
+      }
+    }
+  }
+}

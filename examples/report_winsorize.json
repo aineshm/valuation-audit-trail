@@ -1,0 +1,384 @@
+{
+  "request_id": "req_winsorize_demo",
+  "as_of_date": "2026-02-16",
+  "currency": "USD",
+  "status": "ok",
+
+  "valuation": {
+    "method": "comps_ev_revenue",
+    "fair_value": {
+      "currency": "USD",
+      "point": 1125.0,
+      "range": {
+        "low": 1000.0,
+        "high": 1222.0
+      },
+      "range_basis": "q25_q75",
+      "provenance_node_ids": {
+        "point": "prov_fair_value_point",
+        "range_low": "prov_fair_value_low",
+        "range_high": "prov_fair_value_high"
+      }
+    }
+  },
+
+  "key_inputs": {
+    "subject_company_id": "SUBJ-WINS",
+    "subject_revenue_ltm": 100.0,
+    "selected_comp_count": 10,
+    "raw_multiples": [12.0, 12.22, 10.0, 15.0, 10.0, 12.0, 14.0, 11.11, 11.25, 10.0],
+    "raw_multiples_sorted": [10.0, 10.0, 10.0, 11.11, 11.25, 12.0, 12.0, 12.22, 14.0, 15.0],
+    "adjusted_multiples": [10.0, 10.0, 10.0, 11.11, 11.25, 12.0, 12.0, 12.22, 12.22, 12.22],
+    "quantile_method": "nearest_rank",
+    "outlier_boundaries": {
+      "lower_boundary": 10.0,
+      "upper_boundary": 12.22,
+      "description": "20th/80th percentile computed via nearest_rank: q(0.2)=sorted[ceil(0.2*10)-1]=sorted[1]=10.0, q(0.8)=sorted[ceil(0.8*10)-1]=sorted[7]=12.22"
+    },
+    "winsorized_values": {
+      "clamped_low": [],
+      "clamped_high": [
+        { "company_id": "COMP-012", "ticker": "ESTC", "original": 15.0, "clamped_to": 12.22 },
+        { "company_id": "COMP-015", "ticker": "MNDY", "original": 14.0, "clamped_to": 12.22 }
+      ]
+    },
+    "multiple_low": 10.0,
+    "median_multiple": 11.25,
+    "multiple_high": 12.22
+  },
+
+  "assumptions_used": [
+    { "id": "asm_outlier_policy", "name": "outlier_policy", "value": "winsorize" },
+    { "id": "asm_outlier_quantile", "name": "outlier_quantile", "value": 0.2 },
+    { "id": "asm_quantile_method", "name": "quantile_method", "value": "nearest_rank" }
+  ],
+
+  "sources": [
+    {
+      "id": "src_mock_v1",
+      "provider": "mock_v1",
+      "dataset": "mock_comps_snapshot",
+      "dataset_version": "2026-02-16",
+      "dataset_hash": "sha256:placeholder",
+      "citation": "Mock comps dataset — loosely inspired by publicly traded software companies (figures are illustrative, not real market data)"
+    }
+  ],
+
+  "comps_selection_result": {
+    "requested": {
+      "universe": "global_software",
+      "filters": {
+        "sector": ["Application Software", "Infrastructure Software"],
+        "size": ["mid", "small"],
+        "industry_keywords": ["software"],
+        "revenue_band": { "min": 50.0, "max": 900.0 }
+      },
+      "max_comps": 10,
+      "sort_key": ["ticker", "company_id"]
+    },
+    "dataset_universe": "global_software",
+    "sort_key_used": ["ticker", "company_id"],
+    "matched_before_limit": 12,
+    "included_count": 10,
+    "included_company_ids": [
+      "COMP-014", "COMP-013", "COMP-004", "COMP-012", "COMP-006",
+      "COMP-007", "COMP-015", "COMP-008", "COMP-010", "COMP-011"
+    ],
+    "match_details": [
+      {
+        "company_id": "COMP-014",
+        "ticker": "BILL",
+        "included": true,
+        "matched_filters": { "universe": true, "sector": true, "size": true, "industry_keywords": true, "geographies": true, "revenue_band": true, "ev_positive": true },
+        "excluded_reason": null,
+        "selection_rank": 1
+      },
+      {
+        "company_id": "COMP-013",
+        "ticker": "CFLT",
+        "included": true,
+        "matched_filters": { "universe": true, "sector": true, "size": true, "industry_keywords": true, "geographies": true, "revenue_band": true, "ev_positive": true },
+        "excluded_reason": null,
+        "selection_rank": 2
+      },
+      {
+        "company_id": "COMP-004",
+        "ticker": "DDOG",
+        "included": true,
+        "matched_filters": { "universe": true, "sector": true, "size": true, "industry_keywords": true, "geographies": true, "revenue_band": true, "ev_positive": true },
+        "excluded_reason": null,
+        "selection_rank": 3
+      },
+      {
+        "company_id": "COMP-012",
+        "ticker": "ESTC",
+        "included": true,
+        "matched_filters": { "universe": true, "sector": true, "size": true, "industry_keywords": true, "geographies": true, "revenue_band": true, "ev_positive": true },
+        "excluded_reason": null,
+        "selection_rank": 4
+      },
+      {
+        "company_id": "COMP-006",
+        "ticker": "HUBS",
+        "included": true,
+        "matched_filters": { "universe": true, "sector": true, "size": true, "industry_keywords": true, "geographies": true, "revenue_band": true, "ev_positive": true },
+        "excluded_reason": null,
+        "selection_rank": 5
+      },
+      {
+        "company_id": "COMP-007",
+        "ticker": "MDB",
+        "included": true,
+        "matched_filters": { "universe": true, "sector": true, "size": true, "industry_keywords": true, "geographies": true, "revenue_band": true, "ev_positive": true },
+        "excluded_reason": null,
+        "selection_rank": 6
+      },
+      {
+        "company_id": "COMP-015",
+        "ticker": "MNDY",
+        "included": true,
+        "matched_filters": { "universe": true, "sector": true, "size": true, "industry_keywords": true, "geographies": true, "revenue_band": true, "ev_positive": true },
+        "excluded_reason": null,
+        "selection_rank": 7
+      },
+      {
+        "company_id": "COMP-008",
+        "ticker": "NET",
+        "included": true,
+        "matched_filters": { "universe": true, "sector": true, "size": true, "industry_keywords": true, "geographies": true, "revenue_band": true, "ev_positive": true },
+        "excluded_reason": null,
+        "selection_rank": 8
+      },
+      {
+        "company_id": "COMP-010",
+        "ticker": "SHOP",
+        "included": true,
+        "matched_filters": { "universe": true, "sector": true, "size": true, "industry_keywords": true, "geographies": true, "revenue_band": true, "ev_positive": true },
+        "excluded_reason": null,
+        "selection_rank": 9
+      },
+      {
+        "company_id": "COMP-011",
+        "ticker": "TEAM",
+        "included": true,
+        "matched_filters": { "universe": true, "sector": true, "size": true, "industry_keywords": true, "geographies": true, "revenue_band": true, "ev_positive": true },
+        "excluded_reason": null,
+        "selection_rank": 10
+      },
+      {
+        "company_id": "COMP-003",
+        "ticker": "WDAY",
+        "included": false,
+        "matched_filters": { "universe": true, "sector": true, "size": true, "industry_keywords": true, "geographies": true, "revenue_band": true, "ev_positive": true },
+        "excluded_reason": "limit_max_comps",
+        "selection_rank": 11
+      },
+      {
+        "company_id": "COMP-005",
+        "ticker": "ZS",
+        "included": false,
+        "matched_filters": { "universe": true, "sector": true, "size": true, "industry_keywords": true, "geographies": true, "revenue_band": true, "ev_positive": true },
+        "excluded_reason": "limit_max_comps",
+        "selection_rank": 12
+      },
+      {
+        "company_id": "COMP-001",
+        "ticker": "CRM",
+        "included": false,
+        "matched_filters": { "universe": true, "sector": true, "size": false, "industry_keywords": true, "geographies": true, "revenue_band": false, "ev_positive": true },
+        "excluded_reason": "filter_size",
+        "selection_rank": null
+      },
+      {
+        "company_id": "COMP-002",
+        "ticker": "NOW",
+        "included": false,
+        "matched_filters": { "universe": true, "sector": true, "size": false, "industry_keywords": true, "geographies": true, "revenue_band": false, "ev_positive": true },
+        "excluded_reason": "filter_size",
+        "selection_rank": null
+      },
+      {
+        "company_id": "COMP-009",
+        "ticker": "SAP",
+        "included": false,
+        "matched_filters": { "universe": true, "sector": true, "size": false, "industry_keywords": true, "geographies": true, "revenue_band": false, "ev_positive": true },
+        "excluded_reason": "filter_size",
+        "selection_rank": null
+      }
+    ]
+  },
+
+  "provenance": {
+    "nodes": [
+      {
+        "id": "prov_subject_revenue",
+        "field_path": "key_inputs.subject_revenue_ltm",
+        "formula": "subject_revenue_ltm = request.subject.revenue_ltm (pass-through input)",
+        "inputs": { "revenue_ltm": 100.0 },
+        "assumption_ids": [],
+        "source_ids": [],
+        "output": 100.0
+      },
+      {
+        "id": "prov_selected_comps",
+        "field_path": "comps_selection_result.included_company_ids",
+        "formula": "selected_comps = sort(filter(universe, filters), sort_key)[:max_comps]",
+        "inputs": {
+          "selection": {
+            "universe": "global_software",
+            "filters": {
+              "sector": ["Application Software", "Infrastructure Software"],
+              "size": ["mid", "small"],
+              "industry_keywords": ["software"],
+              "revenue_band": { "min": 50.0, "max": 900.0 }
+            },
+            "max_comps": 10,
+            "sort_key": ["ticker", "company_id"]
+          }
+        },
+        "assumption_ids": [],
+        "source_ids": ["src_mock_v1"],
+        "output": ["COMP-014", "COMP-013", "COMP-004", "COMP-012", "COMP-006", "COMP-007", "COMP-015", "COMP-008", "COMP-010", "COMP-011"]
+      },
+      {
+        "id": "prov_raw_multiples",
+        "field_path": "key_inputs.raw_multiples",
+        "formula": "multiple_i = ev_i / revenue_ltm_i",
+        "inputs": {
+          "selected_comps": [
+            { "company_id": "COMP-014", "ticker": "BILL", "ev": 1500.0, "revenue_ltm": 125.0 },
+            { "company_id": "COMP-013", "ticker": "CFLT", "ev": 1100.0, "revenue_ltm": 90.0 },
+            { "company_id": "COMP-004", "ticker": "DDOG", "ev": 5000.0, "revenue_ltm": 500.0 },
+            { "company_id": "COMP-012", "ticker": "ESTC", "ev": 1800.0, "revenue_ltm": 120.0 },
+            { "company_id": "COMP-006", "ticker": "HUBS", "ev": 3000.0, "revenue_ltm": 300.0 },
+            { "company_id": "COMP-007", "ticker": "MDB", "ev": 2400.0, "revenue_ltm": 200.0 },
+            { "company_id": "COMP-015", "ticker": "MNDY", "ev": 1400.0, "revenue_ltm": 100.0 },
+            { "company_id": "COMP-008", "ticker": "NET", "ev": 4000.0, "revenue_ltm": 360.0 },
+            { "company_id": "COMP-010", "ticker": "SHOP", "ev": 9000.0, "revenue_ltm": 800.0 },
+            { "company_id": "COMP-011", "ticker": "TEAM", "ev": 5500.0, "revenue_ltm": 550.0 }
+          ]
+        },
+        "assumption_ids": [],
+        "source_ids": ["src_mock_v1"],
+        "output": [12.0, 12.22, 10.0, 15.0, 10.0, 12.0, 14.0, 11.11, 11.25, 10.0],
+        "parent_ids": ["prov_selected_comps"]
+      },
+      {
+        "id": "prov_adjusted_multiples",
+        "field_path": "key_inputs.adjusted_multiples",
+        "formula": "adjusted = winsorize(sorted(raw_multiples), quantile=0.2, method=nearest_rank); boundaries q(0.2)=sorted[ceil(0.2*10)-1]=10.0, q(0.8)=sorted[ceil(0.8*10)-1]=12.22; clamps [ESTC 15.0→12.22, MNDY 14.0→12.22]",
+        "inputs": {
+          "raw_multiples": [12.0, 12.22, 10.0, 15.0, 10.0, 12.0, 14.0, 11.11, 11.25, 10.0],
+          "outlier_policy": "winsorize",
+          "outlier_quantile": 0.2,
+          "quantile_method": "nearest_rank"
+        },
+        "assumption_ids": ["asm_outlier_policy", "asm_outlier_quantile", "asm_quantile_method"],
+        "source_ids": ["src_mock_v1"],
+        "output": [10.0, 10.0, 10.0, 11.11, 11.25, 12.0, 12.0, 12.22, 12.22, 12.22],
+        "parent_ids": ["prov_raw_multiples"]
+      },
+      {
+        "id": "prov_multiple_point",
+        "field_path": "key_inputs.median_multiple",
+        "formula": "median_multiple = q50(adjusted_multiples, method=nearest_rank); rank=ceil(0.50*10)=5",
+        "inputs": { "adjusted_multiples": [10.0, 10.0, 10.0, 11.11, 11.25, 12.0, 12.0, 12.22, 12.22, 12.22] },
+        "assumption_ids": ["asm_outlier_policy", "asm_outlier_quantile", "asm_quantile_method"],
+        "source_ids": ["src_mock_v1"],
+        "output": 11.25,
+        "parent_ids": ["prov_adjusted_multiples"]
+      },
+      {
+        "id": "prov_multiple_low",
+        "field_path": "key_inputs.multiple_low",
+        "formula": "multiple_low = q25(adjusted_multiples, method=nearest_rank); rank=ceil(0.25*10)=3",
+        "inputs": { "adjusted_multiples": [10.0, 10.0, 10.0, 11.11, 11.25, 12.0, 12.0, 12.22, 12.22, 12.22] },
+        "assumption_ids": ["asm_outlier_policy", "asm_outlier_quantile", "asm_quantile_method"],
+        "source_ids": ["src_mock_v1"],
+        "output": 10.0,
+        "parent_ids": ["prov_adjusted_multiples"]
+      },
+      {
+        "id": "prov_multiple_high",
+        "field_path": "key_inputs.multiple_high",
+        "formula": "multiple_high = q75(adjusted_multiples, method=nearest_rank); rank=ceil(0.75*10)=8",
+        "inputs": { "adjusted_multiples": [10.0, 10.0, 10.0, 11.11, 11.25, 12.0, 12.0, 12.22, 12.22, 12.22] },
+        "assumption_ids": ["asm_outlier_policy", "asm_outlier_quantile", "asm_quantile_method"],
+        "source_ids": ["src_mock_v1"],
+        "output": 12.22,
+        "parent_ids": ["prov_adjusted_multiples"]
+      },
+      {
+        "id": "prov_fair_value_point",
+        "field_path": "valuation.fair_value.point",
+        "formula": "EV_point = subject_revenue_ltm * median_multiple = 100.0 * 11.25",
+        "inputs": { "revenue_ltm": 100.0, "median_multiple": 11.25 },
+        "assumption_ids": [],
+        "source_ids": ["src_mock_v1"],
+        "output": 1125.0,
+        "parent_ids": ["prov_subject_revenue", "prov_multiple_point"]
+      },
+      {
+        "id": "prov_fair_value_low",
+        "field_path": "valuation.fair_value.range.low",
+        "formula": "EV_low = subject_revenue_ltm * multiple_low = 100.0 * 10.0",
+        "inputs": { "revenue_ltm": 100.0, "multiple_low": 10.0 },
+        "assumption_ids": [],
+        "source_ids": ["src_mock_v1"],
+        "output": 1000.0,
+        "parent_ids": ["prov_subject_revenue", "prov_multiple_low"]
+      },
+      {
+        "id": "prov_fair_value_high",
+        "field_path": "valuation.fair_value.range.high",
+        "formula": "EV_high = subject_revenue_ltm * multiple_high = 100.0 * 12.22",
+        "inputs": { "revenue_ltm": 100.0, "multiple_high": 12.22 },
+        "assumption_ids": [],
+        "source_ids": ["src_mock_v1"],
+        "output": 1222.0,
+        "parent_ids": ["prov_subject_revenue", "prov_multiple_high"]
+      }
+    ]
+  },
+
+  "run_manifest": {
+    "timestamp_utc": "2026-02-16T00:00:00Z",
+    "engine_version": "0.2.0",
+    "config_snapshot": {
+      "engine_version": "0.2.0",
+      "rounding_decimals": 2,
+      "comps_selection": {
+        "universe": "global_software",
+        "filters": {
+          "sector": ["Application Software", "Infrastructure Software"],
+          "size": ["mid", "small"],
+          "industry_keywords": ["software"],
+          "revenue_band": { "min": 50.0, "max": 900.0 }
+        },
+        "max_comps": 10,
+        "sort_key": ["ticker", "company_id"]
+      },
+      "provider_overrides": {
+        "comps_provider": "mock_v1"
+      },
+      "assumptions": {
+        "outlier_policy": "winsorize",
+        "outlier_quantile": 0.2,
+        "quantile_method": "nearest_rank"
+      }
+    },
+    "input_hash": "sha256:placeholder_winsorize_input_hash",
+    "provider_fingerprints": [
+      {
+        "provider": "mock_v1",
+        "dataset": "mock_comps_snapshot",
+        "version": "2026-02-16",
+        "hash": "sha256:placeholder"
+      }
+    ],
+    "output_hash": "sha256:placeholder_winsorize_output_hash"
+  },
+
+  "warnings": [],
+  "errors": []
+}
