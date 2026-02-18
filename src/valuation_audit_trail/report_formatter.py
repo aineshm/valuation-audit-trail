@@ -10,6 +10,37 @@ from __future__ import annotations
 from typing import Any
 
 
+# ═══════════════════════════════════════════════════════════════
+# Assumption Descriptions
+# ═══════════════════════════════════════════════════════════════
+
+ASSUMPTION_DESCRIPTIONS = {
+    "outlier_policy": {
+        "none": "No outlier treatment applied. All raw multiples are used in quantile calculations without modification.",
+        "trim": "Outliers are removed from the dataset. Multiples beyond the specified quantile thresholds are excluded from analysis, reducing sensitivity to extreme values.",
+        "winsorize": "Outliers are clamped to boundary values. Extreme multiples are adjusted to the specified quantile thresholds, preserving sample size while reducing outlier impact.",
+    },
+    "outlier_quantile": "Defines the tail fraction treated as outliers (e.g., 0.1 = bottom 10% and top 10%). Lower values are more conservative, treating fewer observations as outliers.",
+    "quantile_method": {
+        "nearest_rank": "Uses the nearest-rank method for computing quantiles (also known as the exclusive method). Selects the observation at the nearest integer rank position.",
+        "linear_interpolation": "Uses linear interpolation between observations for quantile calculation (also known as the inclusive method). This is the recommended industry-standard approach for continuous distributions.",
+    },
+}
+
+METHODOLOGY_CITATIONS = {
+    "relevance_based_ranking": {
+        "title": "Relevance-Based Comp Selection",
+        "description": "Comps are ranked by revenue proximity to the subject company. This ensures the most economically similar peers are selected, improving valuation comparability.",
+        "rationale": "Revenue size is a strong proxy for business scale, growth stage, and market positioning. Companies with similar revenues face comparable operating dynamics and capital market expectations.",
+    },
+    "lexicographic_ranking": {
+        "title": "Deterministic Lexicographic Ranking",
+        "description": "Comps are sorted alphabetically by specified fields (e.g., ticker, company ID) to ensure reproducible selection.",
+        "rationale": "While arbitrary from an economic perspective, this method guarantees bit-identical results across runs when the same sort key is provided.",
+    },
+}
+
+
 def format_markdown_report(report_dict: dict[str, Any]) -> str:
     """Generate a human-readable Markdown report from a JSON report dict.
 
@@ -76,15 +107,35 @@ def format_markdown_report(report_dict: dict[str, Any]) -> str:
     lines.append(f"**Universe:** {requested['universe']}")
     lines.append(f"**Maximum Comps:** {requested['max_comps']}")
 
-    # Ranking strategy
+    # Ranking strategy with citation
     sort_key_used = comps_result.get("sort_key_used", [])
-    if sort_key_used == ["relevance_based"]:
-        lines.append(f"**Ranking Strategy:** Relevance-based (revenue proximity to subject)")
-    elif requested.get("sort_key") is None:
+    is_relevance_based = sort_key_used == ["relevance_based"] or requested.get("sort_key") is None
+    
+    if is_relevance_based:
         lines.append(f"**Ranking Strategy:** Relevance-based (revenue proximity to subject)")
     else:
         lines.append(f"**Ranking Strategy:** Lexicographic sort by {requested.get('sort_key', [])}")
     lines.append("")
+    
+    # Add methodology citation
+    lines.append("### Ranking Methodology")
+    lines.append("")
+    if is_relevance_based:
+        citation = METHODOLOGY_CITATIONS["relevance_based_ranking"]
+        lines.append(f"**{citation['title']}**")
+        lines.append("")
+        lines.append(f"*Description:* {citation['description']}")
+        lines.append("")
+        lines.append(f"*Rationale:* {citation['rationale']}")
+        lines.append("")
+    else:
+        citation = METHODOLOGY_CITATIONS["lexicographic_ranking"]
+        lines.append(f"**{citation['title']}**")
+        lines.append("")
+        lines.append(f"*Description:* {citation['description']}")
+        lines.append("")
+        lines.append(f"*Rationale:* {citation['rationale']}")
+        lines.append("")
 
     # Filters
     filters = requested.get("filters", {})
@@ -104,13 +155,25 @@ def format_markdown_report(report_dict: dict[str, Any]) -> str:
             lines.append(f"- **Revenue Band:** {rb['min']:,.0f} – {rb['max']:,.0f}")
         lines.append("")
 
-    # Assumptions
-    lines.append("### Assumptions")
+    # Assumptions with descriptions
+    lines.append("### Key Assumptions")
+    lines.append("")
+    lines.append("The following assumptions were applied in this valuation analysis:")
     lines.append("")
     assumptions = report_dict["assumptions_used"]
     for asm in assumptions:
-        lines.append(f"- **{asm['name']}:** {asm['value']}")
-    lines.append("")
+        asm_name = asm['name']
+        asm_value = asm['value']
+        lines.append(f"**{asm_name}:** `{asm_value}`")
+        
+        # Add description for this assumption
+        if asm_name == "outlier_policy" and asm_value in ASSUMPTION_DESCRIPTIONS["outlier_policy"]:
+            lines.append(f"  - *{ASSUMPTION_DESCRIPTIONS['outlier_policy'][asm_value]}*")
+        elif asm_name == "outlier_quantile":
+            lines.append(f"  - *{ASSUMPTION_DESCRIPTIONS['outlier_quantile']}*")
+        elif asm_name == "quantile_method" and asm_value in ASSUMPTION_DESCRIPTIONS["quantile_method"]:
+            lines.append(f"  - *{ASSUMPTION_DESCRIPTIONS['quantile_method'][asm_value]}*")
+        lines.append("")
 
     # ═══════════════════════════════════════════════════════════════
     # Selected Comparables
@@ -180,17 +243,24 @@ def format_markdown_report(report_dict: dict[str, Any]) -> str:
         lines.append("")
 
     # ═══════════════════════════════════════════════════════════════
-    # Data Sources
+    # Data Sources & Citations
     # ═══════════════════════════════════════════════════════════════
-    lines.append("## Data Sources")
+    lines.append("## Data Sources & Citations")
+    lines.append("")
+    lines.append("This valuation relies on the following data sources:")
     lines.append("")
     sources = report_dict.get("sources", [])
     for src in sources:
-        lines.append(f"**{src['id']}**")
-        lines.append(f"- Provider: {src['provider']}")
-        lines.append(f"- Dataset: {src['dataset']} (version {src['dataset_version']})")
-        lines.append(f"- Hash: {src['dataset_hash']}")
-        lines.append(f"- Citation: {src['citation']}")
+        lines.append(f"### {src['id']}")
+        lines.append("")
+        lines.append(f"**Provider:** {src['provider']}")
+        lines.append("")
+        lines.append(f"**Dataset:** {src['dataset']} (version {src['dataset_version']})")
+        lines.append("")
+        lines.append(f"**Hash:** {src['dataset_hash']}")
+        lines.append("")
+        lines.append(f"**Citation:**")
+        lines.append(f"> {src['citation']}")
         lines.append("")
 
     # ═══════════════════════════════════════════════════════════════
