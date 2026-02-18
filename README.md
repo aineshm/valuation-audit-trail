@@ -12,7 +12,7 @@ a provenance DAG.
 ## Status
 
 The engine is **fully implemented** and runs end-to-end with the mock provider (`mock_v1`).
-All 8 source modules are complete with zero TODOs remaining.
+All source modules are complete and production-ready.
 
 ### What works today
 
@@ -20,15 +20,19 @@ All 8 source modules are complete with zero TODOs remaining.
 |---|---|
 | Schema-validated request ingestion | ✅ |
 | Multi-dimensional comp filtering (universe, sector, size, geography, industry keywords, revenue band) | ✅ |
-| Deterministic selection via stable `sort_key` | ✅ |
+| **Relevance-based ranking** (default: revenue proximity) | ✅ **NEW** |
+| **Human-readable Markdown reports** | ✅ **NEW** |
+| **Simplified configuration** (optional sort_key, default quantile_method) | ✅ **NEW** |
+| Deterministic selection via stable sort | ✅ |
 | Outlier policies: none, trim, winsorize | ✅ |
-| Quantile methods: `nearest_rank`, `linear_interpolation` | ✅ |
+| Quantile methods: `nearest_rank`, `linear_interpolation` (default) | ✅ |
 | Full provenance DAG (10 nodes, every fair-value number traceable) | ✅ |
 | `--explain <field_path>` derivation-chain output | ✅ |
 | Run manifest with SHA-256 input/output/provider hashes | ✅ |
 | Error path (schema errors, business-rule errors, comp-count errors) | ✅ |
 | Determinism (identical input + provider → bit-identical output) | ✅ |
 | Comprehensive test suite (124 tests across 7 files, 100% passing) | ✅ |
+| Enhanced mock dataset (30 companies, realistic multiples) | ✅ **NEW** |
 
 ## Quick Start
 
@@ -36,10 +40,16 @@ All 8 source modules are complete with zero TODOs remaining.
 # Install (editable, with dev extras)
 pip install -e ".[dev]"
 
-# Run a valuation
+# Run a valuation (JSON output)
 PYTHONPATH=src python3 -m valuation_audit_trail.cli --input examples/request.json
 
-# Write output to a file
+# Generate a human-readable Markdown report
+PYTHONPATH=src python3 -m valuation_audit_trail.cli \
+  --input examples/request_simple.json \
+  --format markdown \
+  --output report.md
+
+# Write JSON output to a file
 PYTHONPATH=src python3 -m valuation_audit_trail.cli \
   --input examples/request.json \
   --output out/report.json
@@ -58,6 +68,26 @@ Or use the installed entry point (after `pip install -e .`):
 
 ```bash
 valuation-audit --input examples/request.json
+valuation-audit --input examples/request_simple.json --format markdown
+```
+
+### Key Improvements (v0.2.0)
+
+**1. Relevance-Based Ranking (Default)**
+- Comps are now ranked by revenue proximity to the subject company
+- More credible peer selection than arbitrary lexicographic sorting
+- Deterministic tie-breaking via `company_id`
+- Legacy `sort_key` still supported for backward compatibility
+
+**2. Human-Readable Reports**
+- Use `--format markdown` to generate audit-ready workpapers
+- Includes methodology, selected comps table, multiples analysis, and conclusions
+- Perfect for stakeholder communication and documentation
+
+**3. Simplified Configuration**
+- `sort_key` is now optional (defaults to relevance-based)
+- `quantile_method` is now optional (defaults to `"linear_interpolation"`)
+- Reduced complexity without sacrificing determinism or auditability
 ```
 
 ## Project Structure
@@ -87,6 +117,7 @@ valuation-audit-trail/
 │   ├── manifest.py                   # Run manifest + canonical SHA-256 hashing
 │   ├── errors.py                     # Coded errors/warnings with JSON-path refs
 │   ├── explain.py                    # --explain derivation-chain walker
+│   ├── report_formatter.py           # Markdown report generator
 │   └── providers.py                  # Provider boundary (dataset loading + fingerprinting)
 ├── tests/                            # 124 tests across 7 files + conftest
 │   ├── conftest.py                   # Shared fixtures and candidate/selection factories
@@ -106,8 +137,9 @@ valuation-audit-trail/
 
 - **Universe**: `comps_selection.universe` declares which universe to filter against (e.g., `"global_software"`)
 - **Filters**: `sector` (array), `size` (enum: small/mid/large), `industry_keywords`, `geographies`, `revenue_band` (min/max)
-- **Determinism**: Requires `sort_key` (e.g., `["ticker", "company_id"]`) and `quantile_method` (`nearest_rank` | `linear_interpolation`)
-- **Assumptions**: `outlier_policy` (none/trim/winsorize), `outlier_quantile`, `quantile_method`
+- **Ranking**: `sort_key` is **optional** — defaults to relevance-based (revenue proximity). Can specify array like `["ticker", "company_id"]` for legacy behavior
+- **Assumptions**: `outlier_policy` (none/trim/winsorize), `outlier_quantile`, `quantile_method` (optional, defaults to `"linear_interpolation"`)
+- **Schema-level enforcement**: `revenue_ltm > 0` via `exclusiveMinimum`
 - **Schema-level enforcement**: `revenue_ltm > 0` via `exclusiveMinimum`
 
 ### `report.schema.json`
@@ -119,17 +151,21 @@ valuation-audit-trail/
 
 ## Mock Dataset
 
-`data/mock_comps_v1.json` contains **15 companies** loosely inspired by public software companies:
+`data/mock_comps_v1.json` contains **30 companies** loosely inspired by public software companies:
 
-| Sector | Size | Companies |
-|---|---|---|
-| Application Software | large | CRM, NOW, SAP |
-| Application Software | mid | WDAY, HUBS, SHOP, TEAM |
-| Application Software | small | BILL, MNDY |
-| Infrastructure Software | mid | DDOG, ZS, MDB, NET |
-| Infrastructure Software | small | ESTC, CFLT |
+| Sector | Size | Count | Example Companies |
+|---|---|---|---|
+| Application Software | large | 4 | CRM (Salesforce), NOW (ServiceNow), SAP, ADBE (Adobe) |
+| Application Software | mid | 10 | WDAY, SHOP, DOCU, ZM, TWLO, TEAM, CRWD, PLTR, GTLB, HUBS |
+| Application Software | small | 4 | BILL, MNDY, DOMO, SMAR |
+| Infrastructure Software | large | 1 | ORCL (Oracle) |
+| Infrastructure Software | mid | 7 | DDOG, ZS, SNOW, NET, OKTA, MDB, CRWD |
+| Infrastructure Software | small | 4 | ESTC, CFLT, DOCN, PD, DBRG |
 
-Geographies: US, CA, DE, AU, NL, IL. EV/Revenue multiples range ~8×–15×.
+**Geographies:** US (majority), CA, DE, AU, NL, IL  
+**Revenue Range:** $75M - $5B LTM  
+**EV/Revenue Multiples:** ~7.5×–12× (realistic range for software comps)  
+**Notable Companies:** Includes recent IPOs and high-growth SaaS leaders
 
 ## Testing
 
@@ -162,9 +198,10 @@ Shared test utilities live in `tests/conftest.py` (candidate/selection/assumptio
 
 - **[docs/design.md](docs/design.md)** — Architecture, module boundaries, provenance model, determinism rules, pipeline walkthrough, `--explain` contract
 - **[docs/error_codes.md](docs/error_codes.md)** — Complete error/warning code reference with thresholds and examples
+- **[ROADMAP.md](ROADMAP.md)** — Planned enhancements and future development (multi-universe support, alternative methods, scenario comparison, etc.)
 
 ## Non-Goals
 
 - No claim of valuation correctness — only deterministic and auditable transformation
-- No live market data connectors (mock provider only)
-- No UI or API server (CLI-only)
+- No live market data connectors in current version (see [ROADMAP.md](ROADMAP.md) for planned integrations)
+- No UI or API server (CLI-only for now)
