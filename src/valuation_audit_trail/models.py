@@ -47,7 +47,7 @@ class CompsSelection:
     universe: str
     filters: Filters
     max_comps: int
-    sort_key: list[str]
+    sort_key: list[str] | None = None  # None → relevance-based ranking
 
 
 @dataclass(frozen=True, slots=True)
@@ -59,7 +59,7 @@ class ProviderOverrides:
 class Assumptions:
     outlier_policy: str  # "none" | "trim" | "winsorize"
     outlier_quantile: float
-    quantile_method: str  # "nearest_rank" | "linear_interpolation"
+    quantile_method: str = "linear_interpolation"  # default: "linear_interpolation" | "nearest_rank"
 
 
 @dataclass(frozen=True, slots=True)
@@ -115,7 +115,7 @@ class ValuationRequest:
             universe=cs["universe"],
             filters=filters,
             max_comps=int(cs["max_comps"]),
-            sort_key=cs["sort_key"],
+            sort_key=cs.get("sort_key"),  # None if not provided → relevance-based
         )
 
         po = d["provider_overrides"]
@@ -125,7 +125,7 @@ class ValuationRequest:
         assumptions = Assumptions(
             outlier_policy=asm["outlier_policy"],
             outlier_quantile=float(asm["outlier_quantile"]),
-            quantile_method=asm["quantile_method"],
+            quantile_method=asm.get("quantile_method", "linear_interpolation"),  # default
         )
 
         cfg = d["config"]

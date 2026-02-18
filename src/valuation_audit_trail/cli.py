@@ -2,6 +2,7 @@
 
 Usage:
     python -m valuation_audit_trail.cli --input request.json [--output report.json]
+    python -m valuation_audit_trail.cli --input request.json --format markdown [--output report.md]
     python -m valuation_audit_trail.cli --input request.json --explain "valuation.fair_value.point"
 
 Orchestration flow (happy path):
@@ -20,6 +21,7 @@ Orchestration flow (happy path):
     11. JSON-schema-validate report against schemas/report.schema.json
     12. Write report JSON to stdout or --output file
     13. If --explain: run explain.explain_field and emit explain JSON instead
+    14. If --format markdown: emit Markdown report instead of JSON
 
 Error path (step 4 or step 6 errors):
     Steps 7-10 are skipped for provenance; manifest is still built.
@@ -53,6 +55,7 @@ from valuation_audit_trail.models import (
 )
 from valuation_audit_trail.provenance import build_provenance
 from valuation_audit_trail.providers import load_dataset, DatasetPayload
+from valuation_audit_trail.report_formatter import format_markdown_report
 from valuation_audit_trail.valuation import run_valuation
 
 # ---------------------------------------------------------------------------
@@ -109,7 +112,11 @@ def main(argv: list[str] | None = None) -> int:
             assumptions_used=assumptions_used,
             provider_fingerprints=provider_fps,
         )
-        _emit_json(report_dict, Path(args.output) if args.output else None)
+        if args.format == "markdown":
+            markdown_text = format_markdown_report(report_dict)
+            _emit_text(markdown_text, Path(args.output) if args.output else None)
+        else:
+            _emit_json(report_dict, Path(args.output) if args.output else None)
         return 1
 
     # ── 6. Run valuation pipeline ───────────────────────────────────
@@ -134,7 +141,11 @@ def main(argv: list[str] | None = None) -> int:
             assumptions_used=assumptions_used,
             provider_fingerprints=provider_fps,
         )
-        _emit_json(report_dict, Path(args.output) if args.output else None)
+        if args.format == "markdown":
+            markdown_text = format_markdown_report(report_dict)
+            _emit_text(markdown_text, Path(args.output) if args.output else None)
+        else:
+            _emit_json(report_dict, Path(args.output) if args.output else None)
         return 1
 
     # ── 7. Build provenance DAG ─────────────────────────────────────
@@ -172,15 +183,21 @@ def main(argv: list[str] | None = None) -> int:
         "universe": request.comps_selection.universe,
         "filters": filters_echo,
         "max_comps": request.comps_selection.max_comps,
-        "sort_key": request.comps_selection.sort_key,
     }
+    if request.comps_selection.sort_key is not None:
+        requested_echo["sort_key"] = request.comps_selection.sort_key
+    else:
+        requested_echo["sort_key"] = None  # Explicit null for relevance-based
 
     included_ids = [c.company_id for c in vr.included_candidates]
+
+    # Determine the actual sort_key used (None → "relevance_based")
+    sort_key_used = request.comps_selection.sort_key if request.comps_selection.sort_key is not None else ["relevance_based"]
 
     comps_result = CompsSelectionResult(
         requested=requested_echo,
         dataset_universe=request.comps_selection.universe,
-        sort_key_used=request.comps_selection.sort_key,
+        sort_key_used=sort_key_used,
         matched_before_limit=vr.matched_before_limit,
         included_count=len(vr.included_candidates),
         included_company_ids=included_ids,
@@ -249,7 +266,13 @@ def main(argv: list[str] | None = None) -> int:
         _emit_json(explain_out, Path(args.output) if args.output else None)
         return 0
 
-    # ── 12. Emit report ─────────────────────────────────────────────
+    # ── 12. If --format markdown: emit Markdown report ─────────────
+    if args.format == "markdown":
+        markdown_text = format_markdown_report(report_dict)
+        _emit_text(markdown_text, Path(args.output) if args.output else None)
+        return 0
+
+    # ── 13. Emit JSON report (default) ──────────────────────────────
     _emit_json(report_dict, Path(args.output) if args.output else None)
     return 0
 
@@ -263,7 +286,8 @@ def _build_parser() -> argparse.ArgumentParser:
 
     Arguments:
         --input   (required)  Path to request JSON file
-        --output  (optional)  Path to write report JSON (default: stdout)
+        --output  (optional)  Path to write report (default: stdout)
+        --format  (optional)  Output format: 'json' (default) or 'markdown'
         --explain (optional)  Field path to explain (e.g. "valuation.fair_value.point")
     """
     p = argparse.ArgumentParser(
@@ -276,7 +300,11 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     p.add_argument(
         "--output", default=None,
-        help="Path to write report JSON (default: stdout)",
+        help="Path to write report (default: stdout)",
+    )
+    p.add_argument(
+        "--format", default="json", choices=["json", "markdown"],
+        help="Output format: 'json' (default) or 'markdown'",
     )
     p.add_argument(
         "--explain", default=None,
@@ -361,6 +389,20 @@ def _build_error_report(
     if filt.revenue_band is not None:
         filters_echo["revenue_band"] = {"min": filt.revenue_band.min, "max": filt.revenue_band.max}
 
+    # Build requested echo with optional sort_key
+    requested_echo: dict[str, Any] = {
+        "universe": request.comps_selection.universe,
+        "filters": filters_echo,
+        "max_comps": request.comps_selection.max_comps,
+    }
+    if request.comps_selection.sort_key is not None:
+        requested_echo["sort_key"] = request.comps_selection.sort_key
+    else:
+        requested_echo["sort_key"] = None
+
+    # Determine the actual sort_key used
+    sort_key_used = request.comps_selection.sort_key if request.comps_selection.sort_key is not None else ["relevance_based"]
+
     report_dict: dict[str, Any] = {
         "request_id": request.request_id,
         "as_of_date": request.as_of_date,
@@ -371,14 +413,9 @@ def _build_error_report(
         "assumptions_used": [a.to_dict() for a in assumptions_used],
         "sources": [s.to_dict() for s in sources],
         "comps_selection_result": {
-            "requested": {
-                "universe": request.comps_selection.universe,
-                "filters": filters_echo,
-                "max_comps": request.comps_selection.max_comps,
-                "sort_key": request.comps_selection.sort_key,
-            },
+            "requested": requested_echo,
             "dataset_universe": request.comps_selection.universe,
-            "sort_key_used": request.comps_selection.sort_key,
+            "sort_key_used": sort_key_used,
             "matched_before_limit": 0,
             "included_count": 0,
             "included_company_ids": [],
@@ -398,6 +435,15 @@ def _build_error_report(
 def _emit_json(data: dict, output_path: Path | None) -> None:
     """Write a dict as pretty-printed JSON to a file or stdout."""
     text = json.dumps(data, indent=2, ensure_ascii=False) + "\n"
+    if output_path is not None:
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_text(text, encoding="utf-8")
+    else:
+        sys.stdout.write(text)
+
+
+def _emit_text(text: str, output_path: Path | None) -> None:
+    """Write plain text to a file or stdout."""
     if output_path is not None:
         output_path.parent.mkdir(parents=True, exist_ok=True)
         output_path.write_text(text, encoding="utf-8")

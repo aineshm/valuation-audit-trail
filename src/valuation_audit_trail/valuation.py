@@ -117,7 +117,7 @@ def run_valuation(
 
     # ── Step 2 & 3: sort + cap ──────────────────────────────────────
     included, cap_details = _sort_and_cap(
-        passed, selection.sort_key, selection.max_comps,
+        passed, selection.sort_key, selection.max_comps, subject_revenue_ltm,
     )
 
     matched_before_limit = len(passed)
@@ -298,24 +298,51 @@ def _first_failure_reason(mf: MatchedFilters) -> str | None:
 # Step 2 & 3: Sort + Cap
 # ═══════════════════════════════════════════════════════════════════════════
 
+def _relevance_score(candidate: CompCandidate, subject_revenue_ltm: float) -> tuple[float, str]:
+    """Calculate relevance score for a candidate relative to subject revenue.
+
+    Returns a tuple for sorting:
+        (revenue_distance, company_id)
+
+    Lower distance = more relevant = better rank.
+    company_id serves as a stable tie-breaker for determinism.
+    """
+    revenue_distance = abs(candidate.revenue_ltm - subject_revenue_ltm)
+    return (revenue_distance, candidate.company_id)
+
+
 def _sort_and_cap(
     passed: list[tuple[CompCandidate, MatchedFilters]],
-    sort_key: list[str],
+    sort_key: list[str] | None,
     max_comps: int,
+    subject_revenue_ltm: float | None = None,
 ) -> tuple[list[CompCandidate], list[MatchDetailEntry]]:
-    """Stable-sort by sort_key, then cap at max_comps.
+    """Stable-sort by sort_key (or relevance if None), then cap at max_comps.
 
     Returns:
         (included_candidates, all_match_detail_entries)
         Entries beyond max_comps have excluded_reason="limit_max_comps".
         Entries that were filtered out have excluded_reason from _first_failure_reason.
-    """
-    # Stable-sort by sort_key — each key is an attribute of CompCandidate
-    def _sort_tuple(item: tuple[CompCandidate, MatchedFilters]) -> tuple:
-        c = item[0]
-        return tuple(getattr(c, k, "") for k in sort_key)
 
-    sorted_passed = sorted(passed, key=_sort_tuple)
+    Ranking strategy:
+        - If sort_key is provided: lexicographic sort by the specified attributes
+        - If sort_key is None: relevance-based ranking by revenue proximity
+          (closer revenue → better rank, with company_id as stable tie-breaker)
+    """
+    if sort_key is not None:
+        # Legacy: explicit sort_key (lexicographic)
+        def _sort_tuple(item: tuple[CompCandidate, MatchedFilters]) -> tuple:
+            c = item[0]
+            return tuple(getattr(c, k, "") for k in sort_key)
+        sorted_passed = sorted(passed, key=_sort_tuple)
+    else:
+        # Default: relevance-based ranking by revenue proximity
+        if subject_revenue_ltm is None:
+            raise ValueError("subject_revenue_ltm required for relevance-based ranking")
+        sorted_passed = sorted(
+            passed,
+            key=lambda item: _relevance_score(item[0], subject_revenue_ltm)
+        )
 
     included: list[CompCandidate] = []
     details: list[MatchDetailEntry] = []

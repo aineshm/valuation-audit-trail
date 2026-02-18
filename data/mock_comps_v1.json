@@ -199,6 +199,201 @@
         "geography": "IL",
         "size": "small"
       }
+    },
+    {
+      "company_id": "COMP-016",
+      "ticker": "SNOW",
+      "name": "Snowflake Inc",
+      "ev": 6800.0,
+      "revenue_ltm": 680.0,
+      "metadata": {
+        "sector": "Infrastructure Software",
+        "industry_tags": ["software", "saas", "data", "cloud"],
+        "geography": "US",
+        "size": "mid"
+      }
+    },
+    {
+      "company_id": "COMP-017",
+      "ticker": "DOMO",
+      "name": "Domo Inc",
+      "ev": 850.0,
+      "revenue_ltm": 75.0,
+      "metadata": {
+        "sector": "Application Software",
+        "industry_tags": ["software", "saas", "analytics"],
+        "geography": "US",
+        "size": "small"
+      }
+    },
+    {
+      "company_id": "COMP-018",
+      "ticker": "DOCN",
+      "name": "DigitalOcean Holdings",
+      "ev": 980.0,
+      "revenue_ltm": 98.0,
+      "metadata": {
+        "sector": "Infrastructure Software",
+        "industry_tags": ["software", "cloud", "hosting"],
+        "geography": "US",
+        "size": "small"
+      }
+    },
+    {
+      "company_id": "COMP-019",
+      "ticker": "TWLO",
+      "name": "Twilio Inc",
+      "ev": 4200.0,
+      "revenue_ltm": 420.0,
+      "metadata": {
+        "sector": "Application Software",
+        "industry_tags": ["software", "saas", "communications"],
+        "geography": "US",
+        "size": "mid"
+      }
+    },
+    {
+      "company_id": "COMP-020",
+      "ticker": "DOCU",
+      "name": "DocuSign Inc",
+      "ev": 6400.0,
+      "revenue_ltm": 640.0,
+      "metadata": {
+        "sector": "Application Software",
+        "industry_tags": ["software", "saas", "document"],
+        "geography": "US",
+        "size": "mid"
+      }
+    },
+    {
+      "company_id": "COMP-021",
+      "ticker": "ZM",
+      "name": "Zoom Video Communications",
+      "ev": 5600.0,
+      "revenue_ltm": 560.0,
+      "metadata": {
+        "sector": "Application Software",
+        "industry_tags": ["software", "saas", "collaboration", "video"],
+        "geography": "US",
+        "size": "mid"
+      }
+    },
+    {
+      "company_id": "COMP-022",
+      "ticker": "OKTA",
+      "name": "Okta Inc",
+      "ev": 3400.0,
+      "revenue_ltm": 340.0,
+      "metadata": {
+        "sector": "Infrastructure Software",
+        "industry_tags": ["software", "saas", "security", "identity"],
+        "geography": "US",
+        "size": "mid"
+      }
+    },
+    {
+      "company_id": "COMP-023",
+      "ticker": "CRWD",
+      "name": "CrowdStrike Holdings",
+      "ev": 8500.0,
+      "revenue_ltm": 850.0,
+      "metadata": {
+        "sector": "Infrastructure Software",
+        "industry_tags": ["software", "saas", "security", "endpoint"],
+        "geography": "US",
+        "size": "mid"
+      }
+    },
+    {
+      "company_id": "COMP-024",
+      "ticker": "PLTR",
+      "name": "Palantir Technologies",
+      "ev": 7200.0,
+      "revenue_ltm": 720.0,
+      "metadata": {
+        "sector": "Application Software",
+        "industry_tags": ["software", "analytics", "data"],
+        "geography": "US",
+        "size": "mid"
+      }
+    },
+    {
+      "company_id": "COMP-025",
+      "ticker": "SMAR",
+      "name": "Smartsheet Inc",
+      "ev": 1750.0,
+      "revenue_ltm": 175.0,
+      "metadata": {
+        "sector": "Application Software",
+        "industry_tags": ["software", "saas", "collaboration"],
+        "geography": "US",
+        "size": "small"
+      }
+    },
+    {
+      "company_id": "COMP-026",
+      "ticker": "GTLB",
+      "name": "GitLab Inc",
+      "ev": 2100.0,
+      "revenue_ltm": 210.0,
+      "metadata": {
+        "sector": "Application Software",
+        "industry_tags": ["software", "saas", "devops"],
+        "geography": "US",
+        "size": "mid"
+      }
+    },
+    {
+      "company_id": "COMP-027",
+      "ticker": "DBRG",
+      "name": "DigitalBridge Group",
+      "ev": 1600.0,
+      "revenue_ltm": 160.0,
+      "metadata": {
+        "sector": "Infrastructure Software",
+        "industry_tags": ["software", "infrastructure", "data"],
+        "geography": "US",
+        "size": "small"
+      }
+    },
+    {
+      "company_id": "COMP-028",
+      "ticker": "PD",
+      "name": "PagerDuty Inc",
+      "ev": 1320.0,
+      "revenue_ltm": 132.0,
+      "metadata": {
+        "sector": "Infrastructure Software",
+        "industry_tags": ["software", "saas", "incident"],
+        "geography": "US",
+        "size": "small"
+      }
+    },
+    {
+      "company_id": "COMP-029",
+      "ticker": "ADBE",
+      "name": "Adobe Inc",
+      "ev": 32000.0,
+      "revenue_ltm": 4000.0,
+      "metadata": {
+        "sector": "Application Software",
+        "industry_tags": ["software", "creative", "marketing"],
+        "geography": "US",
+        "size": "large"
+      }
+    },
+    {
+      "company_id": "COMP-030",
+      "ticker": "ORCL",
+      "name": "Oracle Corp",
+      "ev": 38000.0,
+      "revenue_ltm": 5000.0,
+      "metadata": {
+        "sector": "Infrastructure Software",
+        "industry_tags": ["software", "database", "cloud", "enterprise"],
+        "geography": "US",
+        "size": "large"
+      }
     }
   ]
 }
