@@ -17,7 +17,7 @@ Build an auditable valuation workflow where every output number is traceable to 
 | `manifest.py` | Run manifest: timestamps, canonical SHA-256 hashing, config snapshot, provider fingerprints |
 | `errors.py` | Coded error/warning constants, `Issue` dataclass, `validate_request()` + `validate_comps_count()` |
 | `explain.py` | `--explain <field_path>` — DFS walks provenance DAG, returns topologically-sorted derivation chain |
-| `providers.py` | Provider boundary: dataset loading from disk, `CompCandidate` parsing, SHA-256 fingerprinting |
+| `providers.py` | Provider boundary: dataset loading from disk, `CompCandidate` parsing with universe stamping, SHA-256 fingerprinting |
 
 ---
 
@@ -58,13 +58,15 @@ Candidates are evaluated against **7 filter dimensions** (in priority order for 
 
 | Priority | Dimension | Match Logic | Empty Filter Behavior |
 |---|---|---|---|
-| 1 | `sector` | Case-insensitive exact match against array | No filter → pass |
-| 2 | `size` | Case-insensitive exact match (small/mid/large) | No filter → pass |
-| 3 | `industry_keywords` | Case-insensitive substring in any `industry_tag` | No filter → pass |
-| 4 | `geographies` | Case-insensitive exact match against array | No filter → pass |
-| 5 | `revenue_band` | `min ≤ candidate.revenue_ltm ≤ max` | No filter → pass |
-| 6 | `ev_positive` | `candidate.ev > 0` | Always applied |
-| 7 | `universe` | Membership in dataset (always true for mock_v1) | Always applied |
+| 1 | `universe` | Case-insensitive exact match: `candidate.universe == selection.universe` | No universe in request → pass |
+| 2 | `sector` | Case-insensitive exact match against array | No filter → pass |
+| 3 | `size` | Case-insensitive exact match (small/mid/large) | No filter → pass |
+| 4 | `industry_keywords` | Case-insensitive substring in any `industry_tag` | No filter → pass |
+| 5 | `geographies` | Case-insensitive exact match against array | No filter → pass |
+| 6 | `revenue_band` | `min ≤ candidate.revenue_ltm ≤ max` | No filter → pass |
+| 7 | `ev_positive` | `candidate.ev > 0` | Always applied |
+
+**Source-agnostic universe filtering**: Each `CompCandidate` carries a `universe` field that is stamped by the provider at load time. The valuation layer compares `candidate.universe` against the requested `selection.universe` without any knowledge of the underlying data source format. This means a single dataset could contain candidates from multiple universes and the engine would correctly filter them.
 
 When a candidate fails multiple filters, the `excluded_reason` is the **first** failing dimension in priority order (e.g., a candidate failing both sector and size gets `"filter_sector"`).
 
@@ -78,7 +80,7 @@ When a candidate fails multiple filters, the `excluded_reason` is the **first** 
 
 Every candidate in the dataset appears in `match_details` with:
 - `matched_filters`: 7 booleans showing which filters passed/failed
-- `excluded_reason`: `null` (included) or one of `filter_sector`, `filter_size`, `filter_industry_keywords`, `filter_geographies`, `filter_revenue_band`, `filter_ev_not_positive`, `limit_max_comps`
+- `excluded_reason`: `null` (included) or one of `filter_universe`, `filter_sector`, `filter_size`, `filter_industry_keywords`, `filter_geographies`, `filter_revenue_band`, `filter_ev_not_positive`, `limit_max_comps`
 - `selection_rank`: 1-based rank for included + limit-excluded; `null` for filter-excluded
 
 ---
@@ -298,14 +300,19 @@ The provider boundary (`providers.py`) is fully isolated from filtering and valu
 
 - **`load_dataset(provider_name)`** → `DatasetPayload`
   - Resolves the JSON file from a provider registry (`_PROVIDER_FILES`)
-  - Parses each entry into a `CompCandidate` (including `sector`, `size`, `geography`, `industry_tags`)
+  - Reads the dataset-level `"universe"` field and passes it to each candidate parser
+  - Parses each entry into a `CompCandidate` via `_parse_comp_entry(entry, *, universe=...)`
+  - Each `CompCandidate` is stamped with the provider's `universe` value, making it self-describing
   - Computes SHA-256 of the raw file bytes for the fingerprint
   - Returns `DatasetPayload` with `.candidates`, `.source_entry`, `.fingerprint`, `.raw_meta`
 
+**Source-agnostic design**: The valuation layer filters on `candidate.universe` vs. the requested universe — it never reads raw JSON or knows anything about the data file format. A future provider (e.g., a live API) only needs to set the `universe` field on each `CompCandidate` it returns.
+
 Currently only `mock_v1` is registered.  Adding a new provider requires:
-1. Adding a JSON file to `data/`
+1. Adding a JSON file to `data/` (or implementing a new loader function)
 2. Adding an entry to `_PROVIDER_FILES` in `providers.py`
 3. Adding the provider name to the `comps_provider` enum in `input.schema.json`
+4. Ensuring each `CompCandidate` has a `universe` field set by the provider
 
 ---
 

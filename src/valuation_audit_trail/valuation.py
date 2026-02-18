@@ -198,9 +198,11 @@ def _evaluate_candidate(
     """Evaluate a single candidate against all filter criteria.
 
     Returns a MatchedFilters with True/False for each dimension:
-        - universe:           candidate is in the named universe
-                              (for mock_v1 this is always True since the
-                               whole file IS the universe)
+        - universe:           candidate.universe matches the requested universe
+                              (case-insensitive).  The provider is responsible
+                              for stamping each candidate with its universe at
+                              load time — the valuation layer never inspects
+                              the raw data source.
         - sector:             candidate.sector matches at least one of
                               filters.sector (case-insensitive exact match).
                               If filters.sector is empty → True (no filter).
@@ -217,8 +219,8 @@ def _evaluate_candidate(
                               (if no revenue_band filter → True)
         - ev_positive:        candidate.ev > 0
     """
-    # Universe — for mock_v1 every candidate in the file belongs to the universe.
-    universe_ok = True
+    # Universe — source-agnostic: every candidate carries its own universe tag.
+    universe_ok = candidate.universe.lower() == universe.lower() if universe else True
 
     # Sector filter (case-insensitive exact match, empty list ⇒ no filter)
     if filters.sector:
@@ -273,8 +275,10 @@ def _first_failure_reason(mf: MatchedFilters) -> str | None:
     """Return the excluded_reason string for the first filter that failed, or None.
 
     Priority order (matches schema enum):
-        sector → size → industry_keywords → geographies → revenue_band → ev_not_positive
+        universe → sector → size → industry_keywords → geographies → revenue_band → ev_not_positive
     """
+    if not mf.universe:
+        return "filter_universe"
     if not mf.sector:
         return "filter_sector"
     if not mf.size:

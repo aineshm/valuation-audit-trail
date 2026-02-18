@@ -6,7 +6,7 @@ Responsibilities:
     3. Compute a SHA-256 hash of the canonical JSON for reproducibility.
     4. Return a SourceEntry + ProviderFingerprint for the manifest.
 
-The provider knows NOTHING about filtering or valuation logic.
+The provider is completely isolated from filtering or valuation logic.
 """
 
 from __future__ import annotations
@@ -88,7 +88,7 @@ def load_dataset(provider_name: str) -> DatasetPayload:
     data = json.loads(raw_bytes)
     file_hash = _compute_file_hash(raw_bytes)
 
-    candidates = [_parse_comp_entry(entry) for entry in data["comps"]]
+    candidates = [_parse_comp_entry(entry, universe=data.get("universe", "")) for entry in data["comps"]]
 
     source_id = f"src_{provider_name}"
     source_entry = SourceEntry(
@@ -128,8 +128,14 @@ def _compute_file_hash(raw_bytes: bytes) -> str:
     return "sha256:" + hashlib.sha256(raw_bytes).hexdigest()
 
 
-def _parse_comp_entry(entry: dict) -> CompCandidate:
-    """Convert a single raw dict from the dataset JSON into a CompCandidate."""
+def _parse_comp_entry(entry: dict, *, universe: str) -> CompCandidate:
+    """Convert a single raw dict from the dataset JSON into a CompCandidate.
+
+    The ``universe`` value is passed in by the caller (load_dataset) from the
+    dataset-level metadata so that each candidate is self-describing.  This
+    keeps the valuation layer completely independent of any particular data
+    source format.
+    """
     meta = entry.get("metadata", {})
     return CompCandidate(
         company_id=entry["company_id"],
@@ -141,4 +147,5 @@ def _parse_comp_entry(entry: dict) -> CompCandidate:
         industry_tags=meta.get("industry_tags", []),
         geography=meta.get("geography", ""),
         size=meta.get("size", ""),
+        universe=universe,
     )

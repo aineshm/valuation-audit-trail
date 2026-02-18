@@ -153,7 +153,12 @@ class ValuationRequest:
 
 @dataclass(frozen=True, slots=True)
 class CompCandidate:
-    """A single comparable company as loaded from a provider dataset."""
+    """A single comparable company as loaded from a provider dataset.
+
+    The ``universe`` field is stamped by the provider at load time so the
+    valuation layer can filter on it without any knowledge of the
+    underlying data source format.
+    """
     company_id: str
     ticker: str
     name: str
@@ -162,7 +167,8 @@ class CompCandidate:
     sector: str
     industry_tags: list[str]
     geography: str
-    size: str  # "small" | "mid" | "large"
+    size: str       # "small" | "mid" | "large"
+    universe: str   # e.g. "global_software" — set by the provider
 
 
 # ═══════════════════════════════════════════════════════════════════════════

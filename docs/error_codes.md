@@ -86,13 +86,14 @@ In addition to error/warning codes, each excluded candidate in `match_details` c
 
 | Reason | Meaning | Priority |
 |---|---|---|
-| `filter_sector` | Candidate sector didn't match any requested sector | 1 (highest) |
-| `filter_size` | Candidate size didn't match any requested size | 2 |
-| `filter_industry_keywords` | No industry tag matched any keyword | 3 |
-| `filter_geographies` | Candidate geography not in requested list | 4 |
-| `filter_revenue_band` | Revenue outside `[min, max]` band | 5 |
-| `filter_ev_not_positive` | `ev ≤ 0` (invalid for multiple calculation) | 6 |
-| `limit_max_comps` | Candidate passed all filters but exceeded `max_comps` cap | 7 (lowest) |
+| `filter_universe` | Candidate universe doesn't match the requested universe | 1 (highest) |
+| `filter_sector` | Candidate sector didn't match any requested sector | 2 |
+| `filter_size` | Candidate size didn't match any requested size | 3 |
+| `filter_industry_keywords` | No industry tag matched any keyword | 4 |
+| `filter_geographies` | Candidate geography not in requested list | 5 |
+| `filter_revenue_band` | Revenue outside `[min, max]` band | 6 |
+| `filter_ev_not_positive` | `ev ≤ 0` (invalid for multiple calculation) | 7 |
+| `limit_max_comps` | Candidate passed all filters but exceeded `max_comps` cap | 8 (lowest) |
 
 When a candidate fails **multiple** filters, only the **highest-priority** reason is reported.
 
@@ -142,15 +143,16 @@ All errors and warnings follow this JSON schema (matches `report.schema.json →
 
 ---
 
-## Usage in Tests
+## Coverage in Tests
 
-Tests should verify:
+The test suite (124 tests, `tests/`) verifies:
 
-1. Each error code is triggered by the appropriate invalid input
-2. The `json_path` correctly identifies the problem location
-3. The `message` includes sufficient context for debugging
-4. Error conditions produce `status="error"`, `valuation=null`
-5. Warning conditions produce `status="ok"` with the warning in `warnings[]`
-6. `validate_request` and `validate_comps_count` both return `(errors, warnings)` tuples
-7. Exclusion reasons in `match_details` follow the priority order
-8. Multiple failing filters report only the highest-priority reason
+1. Each error code is triggered by the appropriate invalid input (`test_error_cases.py`)
+2. The `json_path` correctly identifies the problem location (`test_error_cases.py`)
+3. The `message` includes sufficient context for debugging (`test_error_cases.py`)
+4. Error conditions produce `status="error"`, `valuation=null` (`test_error_cases.py`)
+5. Warning conditions produce `status="ok"` with the warning in `warnings[]` (`test_error_cases.py`)
+6. `validate_request` and `validate_comps_count` both return `(errors, warnings)` tuples (`test_error_cases.py`)
+7. Exclusion reasons in `match_details` follow the priority order (`test_happy_path.py`)
+8. Multiple failing filters report only the highest-priority reason (`test_happy_path.py`)
+9. Universe filtering correctly excludes mismatched candidates (`test_happy_path.py`)
